@@ -1,0 +1,45 @@
+<?php
+if ( ! defined( 'ABSPATH' ) ) exit;
+
+add_action( 'rest_api_init', function() {
+    register_rest_route( 'sdg-chatbot/v1', '/query', array(
+        'methods'  => 'POST',
+        'callback' => 'sdg_chatbot_handle_query',
+        'permission_callback' => '__return_true',
+        'args' => array(
+            'message' => array(
+                'required' => true,
+                'type'     => 'string',
+            ),
+        ),
+    ) );
+} );
+
+function sdg_chatbot_handle_query( WP_REST_Request $request ) {
+    $message = sanitize_text_field( $request->get_param( 'message' ) );
+    if ( $message === '' ) {
+        return array( 'reply' => 'Please type a message.' );
+    }
+
+    // TODO: Replace this with your real AI/backend integration
+    $bot_reply = 'Echo: ' . $message;
+
+    // Logging (if enabled)
+    $o = get_option( 'sdg_chatbot_options', array() );
+    $logging_enabled = ! empty( $o['chatbot_enable_logging'] );
+
+    if ( $logging_enabled ) {
+        global $wpdb;
+        $table = $wpdb->prefix . 'sdg_chatbot_logs';
+        $wpdb->insert(
+            $table,
+            array(
+                'user_message' => $message,
+                'bot_reply'    => $bot_reply,
+            ),
+            array( '%s', '%s' )
+        );
+    }
+
+    return array( 'reply' => $bot_reply );
+}
